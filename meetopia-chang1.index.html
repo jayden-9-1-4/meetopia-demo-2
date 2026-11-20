@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Meetopia — Chặng 1</title>
+<style>
+:root{--cream:#F3EFE6;--wood:#8C6239;--wood-d:#5C4028;--olive:#5F6F52;--stone:#D6D3CD}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#F3EFE6;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--wood-d);-webkit-user-select:none;user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
+.panel{background:rgba(243,239,230,.88);border:1px solid rgba(92,64,40,.22);border-radius:12px;box-shadow:0 2px 10px rgba(60,40,20,.13);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.btn{font:inherit;font-weight:600;font-size:14px;background:var(--wood);color:var(--cream);border:0;border-radius:10px;padding:9px 14px;cursor:pointer;box-shadow:0 2px 6px rgba(60,40,20,.2);transition:background .15s,transform .1s}
+.btn:hover{background:var(--wood-d)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:rgba(243,239,230,.9);color:var(--wood-d);border:1px solid rgba(92,64,40,.25)}
+.btn.ghost:hover{background:#fff}
+.btn.big{padding:12px 20px;font-size:15px}
+.btn.olive{background:var(--olive)}
+.btn.olive:hover{background:#4B5941}
+
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;display:none}
+#hud.on{display:block}
+#hud .panel,#hud button,#joy{pointer-events:auto}
+#info{position:absolute;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));padding:8px 12px 9px;min-width:178px}
+#area{font-weight:700;font-size:15px}
+#clockRow{display:flex;align-items:baseline;gap:8px;margin-top:1px;flex-wrap:wrap}
+#clk{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--olive);transition:transform .25s}
+#clk.flash{transform:scale(1.12)}
+#dayTxt,#phase{font-size:12px;opacity:.8}
+#who{font-size:11px;opacity:.65;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+#tt{display:flex;align-items:center;gap:5px;margin-top:7px;padding-top:7px;border-top:1px dashed rgba(92,64,40,.28);font-size:11px}
+#tt span{opacity:.7;margin-right:2px}
+#tt button{font:inherit;font-size:12px;font-weight:700;border:1px solid rgba(92,64,40,.3);background:#fff8;color:var(--wood-d);border-radius:8px;padding:3px 8px;cursor:pointer}
+#tt button:hover{background:var(--olive);color:var(--cream);border-color:var(--olive)}
+#topr{position:absolute;top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));display:flex;gap:8px}
+#hint{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:6px 12px;font-size:12px;opacity:.9;white-space:nowrap}
+#near{position:absolute;left:50%;bottom:max(52px,calc(env(safe-area-inset-bottom) + 40px));transform:translateX(-50%);padding:7px 14px;font-size:13px;font-weight:600;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#near small{font-weight:400;opacity:.7}
+#act{position:absolute;right:max(18px,env(safe-area-inset-right));bottom:max(26px,env(safe-area-inset-bottom))}
+#joy{position:absolute;left:max(22px,env(safe-area-inset-left));bottom:max(26px,env(safe-area-inset-bottom));width:124px;height:124px;border-radius:50%;background:rgba(92,64,40,.12);border:2px solid rgba(92,64,40,.28);display:none;touch-action:none}
+#knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(92,64,40,.55);box-shadow:0 2px 6px rgba(0,0,0,.2)}
+body.touch #joy{display:block}
+body.touch #hint{display:none}
+body.touch #near{bottom:max(18px,env(safe-area-inset-bottom))}
+
+/* Setup */
+#setup{position:fixed;inset:0;display:none;align-items:center;justify-content:flex-start;padding:20px 5vw;background:linear-gradient(90deg,rgba(243,239,230,.55),rgba(243,239,230,0) 62%)}
+#setup.on{display:flex}
+.card{width:392px;max-width:100%;max-height:94vh;overflow:auto;padding:20px 22px 18px;touch-action:pan-y;-webkit-user-select:auto;user-select:auto}
+.card h1{margin:0;font-size:28px;letter-spacing:.5px;color:var(--olive)}
+.card .sub{margin:2px 0 14px;font-size:13px;opacity:.7}
+.card .fld{display:block;margin-bottom:11px;font-size:12px;font-weight:600}
+.card input{width:100%;margin-top:4px;padding:9px 11px;font:inherit;font-size:16px;color:var(--wood-d);background:#fffdf8;border:1px solid rgba(92,64,40,.3);border-radius:9px;outline:none;-webkit-user-select:text;user-select:text}
+.card input:focus{border-color:var(--olive);box-shadow:0 0 0 2px rgba(95,111,82,.25)}
+.card .row{display:flex;align-items:center;gap:8px;margin-bottom:9px;min-height:32px}
+.card .lbl{width:64px;font-size:12px;font-weight:600;flex:none}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid rgba(92,64,40,.3);background:#fffdf8;color:var(--wood-d);cursor:pointer}
+.seg button.on{background:var(--olive);color:var(--cream);border-color:var(--olive)}
+.sw{display:flex;gap:8px}
+.sw button{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(92,64,40,.35);cursor:pointer;padding:0}
+.sw button.on{box-shadow:0 0 0 2.5px var(--wood-d)}
+.sec{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;opacity:.55;margin:12px 0 7px;font-weight:700}
+.card .btn.big{width:100%;margin-top:6px}
+.link{display:block;margin:10px auto 0;background:none;border:0;font:inherit;font-size:12px;color:var(--wood);text-decoration:underline;cursor:pointer;opacity:.8}
+.shake{animation:shake .35s}
+@keyframes shake{20%{transform:translateX(-5px)}50%{transform:translateX(5px)}80%{transform:translateX(-3px)}}
+@media (max-aspect-ratio:1/1){
+  #setup{align-items:flex-end;justify-content:center;padding:10px;background:linear-gradient(0deg,rgba(243,239,230,.5),rgba(243,239,230,0) 60%)}
+  .card{max-height:60vh;width:min(440px,100%)}
+}
+@media (max-width:480px){#clk{font-size:20px}#info{min-width:0}#hint{font-size:11px}}
+
+#fade{position:fixed;inset:0;background:#2b2118;opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:20}
+#fade.on{opacity:1;pointer-events:auto}
+#err{position:fixed;left:12px;right:12px;top:12px;z-index:30;background:#A5654A;color:#fff;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.4}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div id="info" class="panel">
+    <div id="area">Quảng trường trung tâm</div>
+    <div id="clockRow"><b id="clk">07:00</b><span id="dayTxt">Ngày 1</span><span id="phase">☀ Ban ngày</span></div>
+    <div id="who"></div>
+    <div id="tt"><span>Test giờ</span><button data-add="60">+1h</button><button data-add="240">+4h</button><button data-add="480">+8h</button></div>
+  </div>
+  <div id="topr">
+    <button id="btnSwitch" class="btn olive">⇄ Vào Căn hộ</button>
+    <button id="btnReset" class="btn ghost" title="Reset dữ liệu để test lại">⟲ Reset</button>
+  </div>
+  <div id="near" class="panel" hidden></div>
+  <div id="hint" class="panel">WASD / ↑↓←→ di chuyển · E tương tác</div>
+  <button id="act" class="btn big" hidden>E · Vào</button>
+  <div id="joy"><div id="knob"></div></div>
+</div>
+
+<div id="setup">
+  <div class="card panel">
+    <h1>Meetopia</h1>
+    <p class="sub">Chặng 1 · Khởi tạo hồ sơ</p>
+    <label class="fld">Tên hồ sơ
+      <input id="inName" maxlength="14" placeholder="Nhập tên của bạn" autocomplete="off">
+    </label>
+    <div class="sec">Con Sen</div>
+    <div class="row"><span class="lbl">Giới tính</span>
+      <div class="seg" id="sgGender"><button data-v="m" class="on">Nam</button><button data-v="f">Nữ</button><button data-v="x">Khác</button></div></div>
+    <div class="row"><span class="lbl">Màu da</span><div class="sw" id="swSkin"></div></div>
+    <div class="row"><span class="lbl">Màu tóc</span><div class="sw" id="swHair"></div></div>
+    <div class="row"><span class="lbl">Màu áo</span><div class="sw" id="swShirt"></div></div>
+    <div class="sec">Boss (thú cưng)</div>
+    <div class="row"><span class="lbl">Loài</span>
+      <div class="seg" id="sgPet"><button data-v="dog" class="on">🐶 Chó</button><button data-v="cat">🐱 Mèo</button></div></div>
+    <label class="fld">Tên Boss
+      <input id="inPet" maxlength="12" placeholder="Boss" autocomplete="off">
+    </label>
+    <button id="btnStart" class="btn big">Bắt đầu →</button>
+    <button id="btnWipe" class="link">Xóa dữ liệu đã lưu</button>
+  </div>
+</div>
+
+<div id="fade"></div>
+<div id="err" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* MEETOPIA_SCRIPT_START */
+(function () {
+'use strict';
+var $ = function (s) { return document.querySelector(s); };
+function fail(msg) { var e = $('#err'); e.hidden = false; e.textContent = msg; }
+if (typeof THREE === 'undefined') { fail('Không tải được Three.js từ CDN. Hãy kiểm tra kết nối mạng rồi tải lại trang.'); return; }
+
+/* ================= Hằng số & trạng thái ================= */
+var SAVE_KEY = 'meetopia_ch1_v1';
+var GAME_RATE = 12;                    // 1 giây thật = 12 giây game
+var AX = 200;                          // dịch chuyển không gian Căn hộ
+var C = { cream: 0xF3EFE6, wood: 0x8C6239, woodD: 0x5C4028, olive: 0x5F6F52, oliveL: 0x7C8A68, stone: 0xD6D3CD, stoneD: 0x8F8B82, sand: 0xB58B55, sandD: 0xA67B48, terra: 0xA5654A, ground: 0xEDE6D6, grass: 0xA9B08F, dark: 0x3A2C20 };
+var SKINS = ['#E8C9A0', '#C99A6B', '#8D5E3C'];
+var HAIRS = ['#2E2218', '#5C4028', '#A07A45', '#8A867D'];
+var SHIRTS = ['#5F6F52', '#8C6239', '#B9A98C', '#A5654A'];
+var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+var isMobile = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent) || isTouch;
+if (isTouch) document.body.classList.add('touch');
+
+var state = { mode: 'setup', area: 'plaza', t: 7 * 60, profile: null };
+var busy = false;
+
+/* ================= Renderer / Scene ================= */
+var canvas = $('#c'), renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: !isMobile || window.devicePixelRatio < 2, powerPreference: 'high-performance' });
+} catch (e) { fail('Trình duyệt/thiết bị này không khởi tạo được WebGL. Hãy thử trình duyệt khác hoặc bật tăng tốc phần cứng.'); return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.75 : 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+canvas.addEventListener('webglcontextlost', function (e) { e.preventDefault(); fail('WebGL bị mất ngữ cảnh. Hãy tải lại trang.'); });
+
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0xEDE4CE);
+scene.fog = new THREE.Fog(0xEDE4CE, 75, 190);
+var camera = new THREE.PerspectiveCamera(40, 1, 0.1, 500);
+
+var hemi = new THREE.HemisphereLight(0xFFF4DC, 0xB9AA8E, 0.62);
+scene.add(hemi);
+var sun = new THREE.DirectionalLight(0xFFE6BE, 0.7);
+sun.castShadow = true;
+sun.shadow.mapSize.set(isMobile ? 1024 : 2048, isMobile ? 1024 : 2048);
+var sc = sun.shadow.camera; sc.left = -30; sc.right = 30; sc.top = 30; sc.bottom = -30; sc.near = 1; sc.far = 140; sc.updateProjectionMatrix();
+sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
+scene.add(sun); scene.add(sun.target);
+
+/* ================= Helpers dựng hình ================= */
+var matCache = {}, GC = {};
+function M(hex) { var k = String(hex); return matCache[k] || (matCache[k] = new THREE.MeshLambertMaterial({ color: hex })); }
+function BG(w, h, d) { var k = 'b' + w + '_' + h + '_' + d; return GC[k] || (GC[k] = new THREE.BoxGeometry(w, h, d)); }
+function CG(rt, rb, h, s) {
+  var k = 'c' + [rt, rb, h, s].join('_');
+  if (!GC[k]) { var g = new THREE.CylinderGeometry(rt, rb, h, s).toNonIndexed(); g.computeVertexNormals(); GC[k] = g; }
+  return GC[k];
+}
+var ICO = new THREE.IcosahedronGeometry(1, 0);
+function mk(geo, mat, x, y, z, parent, cast, recv) {
+  var m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
+  m.castShadow = !!cast; m.receiveShadow = recv !== false;
+  if (parent) parent.add(m); return m;
+}
+function bx(w, h, d, hex, x, y, z, p, cast, recv) { return mk(BG(w, h, d), M(hex), x, y, z, p, cast !== false, recv); }
+function cy(rt, rb, h, s, hex, x, y, z, p, cast, recv) { return mk(CG(rt, rb, h, s), M(hex), x, y, z, p, cast !== false, recv); }
+
+function label(text, opt) {
+  opt = opt || {};
+  var lines = String(text).split('\n'), font = opt.font || 54, lh = Math.round(font * 1.22), pad = Math.round(font * 0.45);
+  var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+  var fs = '700 ' + font + 'px system-ui,"Segoe UI",Roboto,Arial,sans-serif';
+  ctx.font = fs;
+  var tw = 0; lines.forEach(function (l) { tw = Math.max(tw, ctx.measureText(l).width); });
+  cv.width = Math.ceil(tw + pad * 2); cv.height = lines.length * lh + pad;
+  ctx = cv.getContext('2d'); ctx.font = fs; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  var r = Math.round(font * 0.38), w = cv.width - 4, h = cv.height - 4, x = 2, y = 2;
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  ctx.fillStyle = opt.bg || 'rgba(243,239,230,0.96)'; ctx.fill();
+  ctx.lineWidth = 4; ctx.strokeStyle = opt.border || '#8C6239'; ctx.stroke();
+  ctx.fillStyle = opt.fg || '#5C4028';
+  lines.forEach(function (l, i) { ctx.fillText(l, cv.width / 2, pad / 2 + lh * (i + 0.5) + 2); });
+  var tex = new THREE.CanvasTexture(cv); tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+  var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
+  var hh = opt.h || 1; sp.scale.set(hh * cv.width / cv.height, hh, 1);
+  sp.renderOrder = 10; return sp;
+}
+function disposeLabels(o) { o.traverse(function (n) { if (n.isSprite) { if (n.material.map) n.material.map.dispose(); n.material.dispose(); } }); }
+
+var seed = 20241120;
+function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+
+/* Vật liệu phát sáng ban đêm */
+var WIN = new THREE.MeshLambertMaterial({ color: 0xBDB7A6, emissive: 0xFFC978, emissiveIntensity: 0 });
+var BULB = new THREE.MeshLambertMaterial({ color: 0xE9DDBF, emissive: 0xFFC978, emissiveIntensity: 0 });
+var GLASS = new THREE.MeshBasicMaterial({ color: 0xD7E4E6 });
+
+/* ================= QUẢNG TRƯỜNG TRUNG TÂM ================= */
+var plaza = new THREE.Group(); scene.add(plaza);
+var obsP = [], POI_P = [], bobbers = [], pulsers = [];
+var BND_P = { x0: -26.5, x1: 26.5, z0: -26.5, z1: 26.5 };
+
+(function buildPlaza() {
+  var outer = mk(new THREE.PlaneGeometry(500, 500), M(C.grass), 0, -0.32, 0, plaza, false, true);
+  outer.rotation.x = -Math.PI / 2;
+  bx(60, 0.3, 60, C.ground, 0, -0.15, 0, plaza, false, true);
+  // viền đá
+  bx(61, 0.4, 0.6, C.stoneD, 0, -0.1, 30.3, plaza, false); bx(61, 0.4, 0.6, C.stoneD, 0, -0.1, -30.3, plaza, false);
+  bx(0.6, 0.4, 61, C.stoneD, 30.3, -0.1, 0, plaza, false); bx(0.6, 0.4, 61, C.stoneD, -30.3, -0.1, 0, plaza, false);
+  function path(w, d, x, z, hex) { return bx(w, 0.05, d, hex || C.stone, x, 0.025, z, plaza, false, true); }
+  path(58, 5, 0, -11);                 // đại lộ Đông-Tây
+  path(5, 36, 0, 8.5);                 // trục Bắc-Nam
+  [-19, -10, 4, 17].forEach(function (x) { path(2.6, 3.6, x, -14.2); });
+  [-18, 18].forEach(function (x) { path(8, 1.6, x * 0.5, 6, C.stone); });
+
+  /* Đài phun nước */
+  cy(4.8, 4.8, 0.1, 24, C.stone, 0, 0.06, 0, plaza, false, true);
+  cy(3.1, 3.2, 0.75, 12, C.stoneD, 0, 0.4, 0, plaza);
+  cy(2.6, 2.6, 0.08, 12, 0xA9B8B0, 0, 0.74, 0, plaza, false, true);
+  cy(0.35, 0.5, 1.7, 8, C.stone, 0, 1.2, 0, plaza);
+  cy(1.1, 0.5, 0.3, 10, C.stoneD, 0, 2.1, 0, plaza);
+  cy(0.7, 0.7, 0.06, 10, 0xA9B8B0, 0, 2.28, 0, plaza, false, true);
+  obsP.push({ x: 0, z: 0, r: 3.3 });
+
+  /* Ghế dài quanh đài phun */
+  [-1, 1].forEach(function (s) {
+    var g = new THREE.Group(); g.position.set(s * 6.6, 0, 0); plaza.add(g);
+    bx(0.6, 0.14, 2.2, C.wood, 0, 0.52, 0, g);
+    bx(0.12, 0.6, 2.2, C.woodD, s * 0.3, 0.85, 0, g);
+    bx(0.5, 0.5, 0.12, C.stoneD, 0, 0.25, -0.9, g); bx(0.5, 0.5, 0.12, C.stoneD, 0, 0.25, 0.9, g);
+    obsP.push({ x: s * 6.6, z: 0, hx: 0.45, hz: 1.15 });
+  });
+
+  /* Toà nhà */
+  function building(o) {
+    var w = o.w, d = o.d, h = o.h;
+    var g = new THREE.Group(); g.position.set(o.x, 0, o.z); plaza.add(g);
+    bx(w, h, d, o.body, 0, h / 2, 0, g);
+    bx(w + 0.25, 0.5, d + 0.25, C.stoneD, 0, 0.25, 0, g);
+    bx(w + 1, 0.45, d + 1, o.roof, 0, h + 0.22, 0, g);
+    bx(w * 0.55, 0.55, d * 0.55, o.roof, 0, h + 0.72, 0, g);
+    bx(1.7, 2.5, 0.2, o.door || C.woodD, 0, 1.25, d / 2 + 0.02, g);
+    bx(0.12, 0.12, 0.08, C.cream, 0.55, 1.2, d / 2 + 0.16, g, false);
+    var rows = o.rows || [3.4], xs = w > 7 ? [-0.32, 0.32] : [-0.3, 0.3];
+    rows.forEach(function (y) {
+      xs.forEach(function (fx) {
+        bx(1.55, 1.55, 0.1, C.cream, fx * w, y, d / 2 + 0.02, g, false);
+        mk(BG(1.25, 1.25, 0.14), WIN, fx * w, y, d / 2 + 0.05, g, false, false);
+      });
+    });
+    if (o.awn) { var a = bx(w * 0.7, 0.16, 1.8, o.awn, 0, 2.95, d / 2 + 0.9, g, true); a.rotation.x = 0.2; }
+    var lb = label(o.name, { h: o.lh || 1.0 }); lb.position.set(0, h + 2.0, d / 2 * 0.3); g.add(lb);
+    var cone = mk(CG(0, 0.4, 0.8, 4), M(C.olive), 0, h + 3.3 + (o.lh > 1.1 ? 0.6 : 0), 0, g, false, false); cone.rotation.x = Math.PI;
+    bobbers.push({ o: cone, y: cone.position.y });
+    obsP.push({ x: o.x, z: o.z, hx: w / 2 + 0.15, hz: d / 2 + 0.15 });
+    return g;
+  }
+  building({ x: -19, z: -19, w: 8, d: 6, h: 5.5, body: C.stone, roof: C.woodD, awn: C.olive, name: 'Trung tâm môi giới\nviệc làm', lh: 1.45 });
+  building({ x: -10, z: -19, w: 6, d: 6, h: 4.6, body: 0xEFE8D8, roof: C.wood, awn: C.terra, name: 'Cửa hàng', rows: [3.2] });
+  building({ x: 4, z: -19, w: 8, d: 6, h: 4.8, body: 0x7A5535, roof: C.stoneD, awn: C.cream, name: 'Quán cà phê', rows: [3.3] });
+  building({ x: 17, z: -19, w: 8, d: 6, h: 7.4, body: 0xCFCBC2, roof: C.olive, name: 'Căn hộ thuê', rows: [3.6, 5.8], door: C.olive });
+
+  /* Chi tiết quanh Cửa hàng & Quán cà phê */
+  bx(0.9, 0.9, 0.9, C.sand, -12.2, 0.45, -15.2, plaza); bx(0.7, 0.7, 0.7, C.sandD, -12.0, 1.25, -15.2, plaza);
+  cy(0.45, 0.5, 0.9, 8, C.woodD, -7.8, 0.45, -15.3, plaza);
+  obsP.push({ x: -12.1, z: -15.2, hx: 0.55, hz: 0.55 }, { x: -7.8, z: -15.3, r: 0.55 });
+  [1.7, 6.3].forEach(function (x) {
+    cy(0.1, 0.1, 0.8, 6, C.woodD, x, 0.4, -14.3, plaza); cy(0.6, 0.6, 0.08, 10, C.cream, x, 0.84, -14.3, plaza);
+    cy(0.22, 0.22, 0.4, 8, C.sand, x - 0.9, 0.2, -14.3, plaza); cy(0.22, 0.22, 0.4, 8, C.sand, x + 0.9, 0.2, -14.3, plaza);
+    obsP.push({ x: x, z: -14.3, r: 0.7 });
+  });
+
+  /* Cửa vào Căn hộ — bệ phát sáng */
+  var pad = cy(1.5, 1.5, 0.08, 18, C.oliveL, 17, 0.09, -14.1, plaza, false, true);
+  pulsers.push({ o: pad, s: 1 });
+  cy(1.0, 1.0, 0.1, 18, C.olive, 17, 0.1, -14.1, plaza, false, true);
+
+  /* Khu vực nhiệm vụ đối tác */
+  function questZone(x, z, idx) {
+    var g = new THREE.Group(); g.position.set(x, 0, z); plaza.add(g);
+    cy(3.8, 3.8, 0.1, 22, C.stone, 0, 0.06, 0, g, false, true);
+    cy(2.7, 2.7, 0.12, 22, C.oliveL, 0, 0.07, 0, g, false, true);
+    bx(2.4, 0.9, 1.1, C.wood, 0, 0.45, -2.0, g); bx(2.6, 0.12, 1.3, C.woodD, 0, 0.96, -2.0, g);
+    bx(0.7, 0.7, 0.7, C.sand, -1.9, 0.35, -1.7, g); bx(0.6, 0.6, 0.6, C.sandD, 1.9, 0.3, -1.6, g);
+    cy(0.07, 0.07, 3.4, 6, C.woodD, 1.7, 1.7, -2.6, g);
+    bx(1.15, 0.7, 0.06, idx === 1 ? C.olive : C.terra, 2.3, 3.0, -2.6, g);
+    var lb = label('Nhiệm vụ đối tác ' + idx, { h: 0.95 }); lb.position.set(0, 4.6, -1.0); g.add(lb);
+    var cone = mk(CG(0, 0.4, 0.8, 4), M(C.olive), 0, 5.6, -1.0, g, false, false); cone.rotation.x = Math.PI;
+    bobbers.push({ o: cone, y: 5.6 });
+    obsP.push({ x: x, z: z - 2.0, hx: 1.35, hz: 0.7 }, { x: x - 1.9, z: z - 1.7, r: 0.5 }, { x: x + 1.9, z: z - 1.6, r: 0.45 });
+  }
+  questZone(-18, 7, 1); questZone(18, 7, 2);
+
+  /* Cây */
+  var tcache = {};
+  function tree(x, z, s, kind, cast) {
+    var g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); g.rotation.y = rnd() * 6.28; plaza.add(g);
+    cy(0.22, 0.3, 1.5, 6, C.woodD, 0, 0.75, 0, g, cast, true);
+    if (kind === 0) {
+      cy(0, 1.55, 2.3, 7, C.olive, 0, 2.45, 0, g, cast, true);
+      cy(0, 1.15, 1.9, 7, C.oliveL, 0, 3.55, 0, g, cast, true);
+    } else {
+      var b1 = mk(ICO, M(C.olive), 0, 2.6, 0, g, cast, true); b1.scale.set(1.5, 1.35, 1.5);
+      var b2 = mk(ICO, M(C.oliveL), 0.5, 3.5, 0.2, g, cast, true); b2.scale.set(1.0, 0.95, 1.0);
+    }
+    return g;
+  }
+  var inner = [
+    [-25, -6], [-25, 1], [-25, 8], [-25, 15], [-25, 22], [25, -6], [25, 1], [25, 8], [25, 15], [25, 22],
+    [-18, 25], [-12, 25], [-6, 25], [6, 25], [12, 25], [18, 25],
+    [-9, -4.5], [9, -4.5], [-9.5, 10], [9.5, 10], [-10, 19], [10, 19], [-4, 17], [4, 21],
+    [-25, -22], [-3, -24.5], [11, -24.5], [24, -24.5], [-14, -24.5], [-24.5, -25]
+  ];
+  inner.forEach(function (p, i) {
+    var s = 0.85 + rnd() * 0.35; tree(p[0], p[1], s, i % 2, true);
+    obsP.push({ x: p[0], z: p[1], r: 0.5 * s });
+  });
+  for (var i = 0; i < 46; i++) {
+    var x = (rnd() - 0.5) * 130, z = (rnd() - 0.5) * 130;
+    if (Math.max(Math.abs(x), Math.abs(z)) < 33) continue;
+    tree(x, z, 1.0 + rnd() * 0.8, i % 2, false);
+  }
+
+  /* Đèn đường */
+  function lamp(x, z) {
+    cy(0.07, 0.1, 3.3, 6, C.stoneD, x, 1.65, z, plaza);
+    cy(0.25, 0.3, 0.2, 6, C.stoneD, x, 0.1, z, plaza);
+    mk(BG(0.42, 0.34, 0.42), BULB, x, 3.4, z, plaza, false, false);
+    bx(0.6, 0.12, 0.6, C.woodD, x, 3.65, z, plaza, false);
+    obsP.push({ x: x, z: z, r: 0.25 });
+  }
+  [-24, -16, -8, 8, 16, 24].forEach(function (x) { lamp(x, -8.0); });
+  [[-3.4, 9], [3.4, 9], [-3.4, 20], [3.4, 20]].forEach(function (p) { lamp(p[0], p[1]); });
+})();
+
+POI_P.push(
+  { id: 'job', name: 'Trung tâm môi giới việc làm', note: 'mở ở Chặng sau', x: -19, z: -14, r: 3.4 },
+  { id: 'shop', name: 'Cửa hàng', note: 'mở ở Chặng sau', x: -10, z: -14, r: 3.0 },
+  { id: 'cafe', name: 'Quán cà phê', note: 'mở ở Chặng sau', x: 4, z: -14, r: 3.4 },
+  { id: 'q1', name: 'Nhiệm vụ đối tác 1', note: 'mở ở Chặng sau', x: -18, z: 7, r: 4.2 },
+  { id: 'q2', name: 'Nhiệm vụ đối tác 2', note: 'mở ở Chặng sau', x: 18, z: 7, r: 4.2 },
+  { id: 'door', name: 'Căn hộ thuê', action: 'enter', verb: 'Vào Căn hộ', x: 17, z: -14, r: 2.4 }
+);
+
+/* ================= CĂN HỘ THUÊ NHỎ ================= */
+var apt = new THREE.Group(); apt.position.x = AX; scene.add(apt); apt.visible = false;
+var obsA = [], POI_A = [];
+var BND_A = { x0: AX - 6.5, x1: AX + 6.5, z0: -5.4, z1: 5.4 };
+var aptLight = new THREE.PointLight(0xFFC98A, 0, 18, 1.6); aptLight.position.set(0, 3.2, 0); apt.add(aptLight);
+var aptBuilt = false;
+
+function buildApt(pf) {
+  if (aptBuilt) return; aptBuilt = true;
+  var g = apt;
+  bx(14, 0.3, 12, C.wood, 0, -0.15, 0, g, false, true);
+  for (var i = -6; i <= 6; i++) bx(0.04, 0.02, 12, 0x7A5330, i + 0.5, 0.005, 0, g, false, true);
+  // tường (cắt nửa để nhìn từ trên)
+  bx(14.8, 3.4, 0.4, C.cream, 0, 1.7, -6.2, g, false, true); bx(14.8, 1.05, 0.46, C.stone, 0, 0.52, -6.2, g, false, true);
+  bx(14.8, 0.14, 0.55, C.woodD, 0, 3.47, -6.2, g, false);
+  bx(0.4, 3.4, 12.8, C.cream, -7.2, 1.7, 0, g, false, true); bx(0.46, 1.05, 12.8, C.stone, -7.2, 0.52, 0, g, false, true);
+  bx(0.55, 0.14, 12.8, C.woodD, -7.2, 3.47, 0, g, false);
+  // cửa sổ
+  bx(2.7, 1.9, 0.1, C.woodD, 2.6, 2.1, -5.98, g, false); mk(BG(2.4, 1.6, 0.12), GLASS, 2.6, 2.1, -5.96, g, false, false);
+  bx(0.08, 1.6, 0.14, C.woodD, 2.6, 2.1, -5.93, g, false); bx(2.4, 0.08, 0.14, C.woodD, 2.6, 2.1, -5.93, g, false);
+  bx(0.1, 1.9, 2.7, C.woodD, -6.98, 2.1, 1.6, g, false); mk(BG(0.12, 1.6, 2.4), GLASS, -6.96, 2.1, 1.6, g, false, false);
+  bx(0.14, 1.6, 0.08, C.woodD, -6.93, 2.1, 1.6, g, false); bx(0.14, 0.08, 2.4, C.woodD, -6.93, 2.1, 1.6, g, false);
+
+  /* Góc bìa carton của Con Sen */
+  var m1 = bx(3.3, 0.09, 3.1, C.sand, -4.9, 0.045, -4.0, g, false, true); m1.rotation.y = 0.05;
+  var m2 = bx(3.0, 0.09, 2.8, C.sandD, -4.9, 0.13, -4.0, g, false, true); m2.rotation.y = -0.07;
+  bx(0.28, 0.02, 2.9, 0xD9C7A0, -4.9, 0.185, -4.0, g, false, true);
+  var bl = bx(2.1, 0.26, 1.1, C.olive, -4.7, 0.33, -3.7, g, true, true); bl.rotation.y = 0.12;
+  bx(2.1, 0.04, 0.22, C.oliveL, -4.7, 0.47, -3.7, g, false).rotation.y = 0.12;
+  var pl = bx(0.85, 0.2, 0.55, C.cream, -6.1, 0.34, -4.6, g, true, true); pl.rotation.y = 0.3;
+  var cb = bx(1.0, 0.8, 1.0, C.sand, -6.1, 0.4, -1.9, g); cb.rotation.y = 0.2;
+  bx(0.9, 0.04, 0.25, 0xD9C7A0, -6.1, 0.81, -1.9, g, false).rotation.y = 0.2;
+  obsA.push({ x: AX - 6.1, z: -1.9, hx: 0.55, hz: 0.55 });
+  var l1 = label('Ổ carton của Con Sen', { h: 0.8 }); l1.position.set(-4.9, 1.9, -3.2); g.add(l1);
+  POI_A.push({ id: 'bed', name: 'Ổ carton của Con Sen', note: 'nơi ngủ tạm', x: AX - 4.9, z: -3.8, r: 2.6 });
+
+  /* Khu của Boss (rộng hơn) */
+  var pet = pf.pet, pn = pf.petName;
+  bx(7.0, 0.04, 5.6, C.olive, 3.0, 0.02, -2.5, g, false, true);
+  bx(6.4, 0.05, 5.0, C.oliveL, 3.0, 0.03, -2.5, g, false, true);
+  bx(5.2, 0.06, 3.8, 0x8A9575, 3.0, 0.04, -2.5, g, false, true);
+  cy(1.05, 1.15, 0.34, 10, C.woodD, 4.6, 0.17, -3.9, g, true, true);
+  cy(0.85, 0.85, 0.16, 10, C.cream, 4.6, 0.36, -3.9, g, false, true);
+  cy(0.3, 0.24, 0.16, 8, C.stoneD, 1.5, 0.08, -4.9, g); cy(0.26, 0.26, 0.06, 8, 0xA9B8B0, 1.5, 0.15, -4.9, g, false);
+  cy(0.3, 0.24, 0.16, 8, C.stoneD, 2.4, 0.08, -4.9, g); cy(0.26, 0.26, 0.06, 8, C.sand, 2.4, 0.15, -4.9, g, false);
+  if (pet === 'dog') {
+    var ball = mk(ICO, M(C.terra), 1.8, 0.25, -1.0, g, true, true); ball.scale.setScalar(0.25);
+    var bone = bx(0.6, 0.12, 0.14, C.cream, 3.6, 0.1, -0.7, g); bone.rotation.y = 0.6;
+    var b1 = mk(ICO, M(C.cream), 3.35, 0.1, -0.85, g, true, true); b1.scale.setScalar(0.13);
+    var b2 = mk(ICO, M(C.cream), 3.85, 0.1, -0.55, g, true, true); b2.scale.setScalar(0.13);
+  } else {
+    bx(1.1, 0.14, 1.1, C.woodD, 5.5, 0.07, -1.4, g);
+    cy(0.2, 0.2, 1.9, 8, 0xC9B48A, 5.5, 1.05, -1.4, g);
+    bx(0.9, 0.12, 0.9, C.wood, 5.5, 2.05, -1.4, g);
+    var yarn = mk(ICO, M(C.terra), 2.0, 0.2, -1.0, g, true, true); yarn.scale.setScalar(0.2);
+    obsA.push({ x: AX + 5.5, z: -1.4, r: 0.6 });
+  }
+  var l2 = label('Khu của ' + pn, { h: 0.8 }); l2.position.set(3.0, 1.7, -3.9); g.add(l2);
+  POI_A.push({ id: 'boss', name: 'Khu của ' + pn, note: 'khu vực thú cưng', x: AX + 3.0, z: -2.5, r: 3.4 });
+
+  /* Nội thất */
+  bx(1.8, 2.2, 0.7, C.wood, -1.6, 1.1, -5.55, g); bx(1.7, 0.06, 0.04, C.woodD, -1.6, 1.1, -5.19, g, false);
+  bx(0.1, 0.4, 0.04, C.cream, -1.95, 1.3, -5.17, g, false); bx(0.1, 0.4, 0.04, C.cream, -1.25, 1.3, -5.17, g, false);
+  obsA.push({ x: AX - 1.6, z: -5.55, hx: 0.95, hz: 0.4 });
+  // bàn nhỏ + đèn
+  [[-0.5, -0.9], [0.5, -0.9], [-0.5, 0.9], [0.5, 0.9]].forEach(function (p) { cy(0.06, 0.06, 0.85, 6, C.woodD, -5.8 + p[0] * 0.8, 0.42, 1.2 + p[1] * 0.95, g); });
+  bx(1.3, 0.12, 2.3, C.wood, -5.8, 0.88, 1.2, g);
+  cy(0.18, 0.22, 0.08, 8, C.stoneD, -5.8, 0.98, 0.7, g); cy(0.03, 0.03, 0.5, 6, C.stoneD, -5.8, 1.25, 0.7, g);
+  mk(CG(0.2, 0.34, 0.3, 8), BULB, -5.8, 1.6, 0.7, g, false, false);
+  cy(0.14, 0.12, 0.2, 8, C.cream, -5.8, 1.02, 1.7, g);
+  obsA.push({ x: AX - 5.8, z: 1.2, hx: 0.75, hz: 1.25 });
+  cy(0.35, 0.35, 0.5, 8, C.sandD, -4.4, 0.25, 1.2, g); obsA.push({ x: AX - 4.4, z: 1.2, r: 0.42 });
+  // thùng đồ
+  bx(1.0, 0.8, 1.0, C.sand, -6.2, 0.4, 4.6, g); bx(0.7, 0.6, 0.7, C.sandD, -6.2, 1.1, 4.6, g);
+  obsA.push({ x: AX - 6.2, z: 4.6, hx: 0.6, hz: 0.6 });
+  // cây chậu
+  cy(0.4, 0.3, 0.6, 8, C.terra, 6.1, 0.3, -5.0, g);
+  var lf = mk(ICO, M(C.olive), 6.1, 1.2, -5.0, g, true, true); lf.scale.set(0.7, 0.8, 0.7);
+  obsA.push({ x: AX + 6.1, z: -5.0, r: 0.5 });
+  // khung cửa ra + thảm
+  bx(0.22, 2.7, 0.22, C.woodD, 3.55, 1.35, 5.85, g); bx(0.22, 2.7, 0.22, C.woodD, 5.45, 1.35, 5.85, g); bx(2.1, 0.22, 0.26, C.woodD, 4.5, 2.7, 5.85, g);
+  bx(2.0, 0.04, 1.0, C.stoneD, 4.5, 0.03, 5.0, g, false, true);
+  var pad = cy(0.9, 0.9, 0.06, 16, C.oliveL, 4.5, 0.07, 4.5, g, false, true); pulsers.push({ o: pad, s: 1 });
+  var l3 = label('Cửa ra', { h: 0.7 }); l3.position.set(4.5, 3.4, 5.85); g.add(l3);
+  POI_A.push({ id: 'exit', name: 'Cửa ra', action: 'exit', verb: 'Ra Quảng trường', x: AX + 4.5, z: 4.9, r: 1.9 });
+}
+
+/* ================= Nhân vật & Boss ================= */
+function buildPlayer(pf) {
+  var g = new THREE.Group(), skin = pf.skin, hair = pf.hair, shirt = pf.shirt;
+  var pants = pf.gender === 'f' ? C.stoneD : C.woodD, legs = [], arms = [];
+  [-1, 1].forEach(function (s) {
+    var lg = new THREE.Group(); lg.position.set(s * 0.19, 0.78, 0); g.add(lg);
+    bx(0.3, 0.78, 0.32, pants, 0, -0.39, 0, lg); bx(0.32, 0.14, 0.42, C.dark, 0, -0.72, 0.05, lg); legs.push(lg);
+  });
+  var body = new THREE.Group(); g.add(body);
+  bx(0.84, 0.84, 0.46, shirt, 0, 1.2, 0, body);
+  bx(0.5, 0.56, 0.2, C.sand, 0, 1.25, -0.34, body);
+  bx(0.52, 0.08, 0.22, C.woodD, 0, 1.52, -0.34, body, false);
+  [-1, 1].forEach(function (s) {
+    var a = new THREE.Group(); a.position.set(s * 0.55, 1.55, 0); g.add(a);
+    bx(0.22, 0.7, 0.26, shirt, 0, -0.33, 0, a); bx(0.2, 0.2, 0.24, skin, 0, -0.78, 0, a); arms.push(a);
+  });
+  var head = new THREE.Group(); g.add(head);
+  bx(0.6, 0.6, 0.6, skin, 0, 1.92, 0, head);
+  bx(0.08, 0.1, 0.04, C.dark, -0.14, 1.95, 0.31, head, false); bx(0.08, 0.1, 0.04, C.dark, 0.14, 1.95, 0.31, head, false);
+  if (pf.gender === 'f') {
+    bx(0.68, 0.2, 0.68, hair, 0, 2.28, 0, head); bx(0.62, 0.12, 0.1, hair, 0, 2.17, 0.3, head, false);
+    bx(0.68, 0.85, 0.16, hair, 0, 1.8, -0.32, head); bx(0.12, 0.5, 0.4, hair, -0.34, 1.98, -0.04, head); bx(0.12, 0.5, 0.4, hair, 0.34, 1.98, -0.04, head);
+    bx(0.92, 0.32, 0.56, pants, 0, 0.9, 0, body);
+  } else if (pf.gender === 'x') {
+    bx(0.7, 0.3, 0.7, C.terra, 0, 2.3, 0, head); bx(0.16, 0.16, 0.16, C.cream, 0, 2.52, 0, head);
+    bx(0.1, 0.22, 0.34, hair, -0.34, 2.02, 0, head); bx(0.1, 0.22, 0.34, hair, 0.34, 2.02, 0, head);
+  } else {
+    bx(0.68, 0.2, 0.68, hair, 0, 2.28, 0, head); bx(0.62, 0.12, 0.1, hair, 0, 2.17, 0.3, head, false);
+    bx(0.66, 0.36, 0.14, hair, 0, 2.08, -0.3, head);
+  }
+  var lb = label(pf.name || 'Con Sen', { h: 0.52, font: 48 }); lb.position.set(0, 2.95, 0); g.add(lb);
+  g.scale.setScalar(0.92);
+  g.userData = { legs: legs, arms: arms, body: body, head: head };
+  return g;
+}
+
+function buildPet(type, name) {
+  var g = new THREE.Group(), dog = type === 'dog';
+  var fur = dog ? 0xB98A56 : 0x9B9890, fur2 = dog ? 0xF1E6D0 : 0xE8E2D4, ear = dog ? 0x7A5530 : 0x7C7970;
+  var bw = dog ? 0.6 : 0.46, bl = dog ? 1.1 : 0.95, lh = dog ? 0.46 : 0.42;
+  var bodyG = new THREE.Group(); g.add(bodyG);
+  bx(bw, 0.52, bl, fur, 0, lh + 0.26, 0, bodyG);
+  if (dog) bx(0.4, 0.3, 0.5, fur2, 0, lh + 0.1, 0.3, bodyG, false);
+  var head = new THREE.Group(); head.position.set(0, lh + 0.6, bl / 2 + 0.05); bodyG.add(head);
+  bx(0.5, 0.46, 0.48, fur, 0, 0, 0, head);
+  if (dog) {
+    bx(0.28, 0.2, 0.28, fur2, 0, -0.09, 0.32, head); bx(0.12, 0.08, 0.06, C.dark, 0, -0.01, 0.47, head, false);
+    bx(0.14, 0.34, 0.2, ear, -0.31, -0.04, -0.02, head).rotation.z = 0.18; bx(0.14, 0.34, 0.2, ear, 0.31, -0.04, -0.02, head).rotation.z = -0.18;
+  } else {
+    bx(0.1, 0.07, 0.05, 0xC9908A, 0, -0.07, 0.25, head, false);
+    [-1, 1].forEach(function (s) { var e = mk(CG(0, 0.14, 0.28, 4), M(fur), s * 0.16, 0.34, 0, head, true, true); e.rotation.y = Math.PI / 4; });
+  }
+  bx(0.07, 0.08, 0.04, C.dark, -0.13, 0.06, 0.245, head, false); bx(0.07, 0.08, 0.04, C.dark, 0.13, 0.06, 0.245, head, false);
+  var tail = new THREE.Group(); tail.position.set(0, lh + 0.5, -bl / 2); bodyG.add(tail);
+  var tl = dog ? 0.5 : 0.8;
+  bx(0.1, tl, 0.1, dog ? fur : fur, 0, tl / 2, 0, tail); tail.rotation.x = dog ? -1.0 : -0.3;
+  var legs = [];
+  [[-1, 1], [1, 1], [-1, -1], [1, -1]].forEach(function (p) {
+    var l = new THREE.Group(); l.position.set(p[0] * (bw / 2 - 0.1), lh, p[1] * (bl / 2 - 0.13)); g.add(l);
+    bx(0.17, lh, 0.17, fur, 0, -lh / 2, 0, l); bx(0.18, 0.1, 0.2, fur2, 0, -lh + 0.05, 0.02, l, false); legs.push(l);
+  });
+  var lb = label(name || 'Boss', { h: 0.46, font: 46, bg: 'rgba(95,111,82,0.95)', fg: '#F3EFE6', border: '#F3EFE6' });
+  lb.position.set(0, lh + 1.55, 0); g.add(lb);
+  g.scale.setScalar(dog ? 1 : 0.88);
+  g.userData = { legs: legs, bodyG: bodyG, head: head, tail: tail, dog: dog, lh: lh };
+  return g;
+}
+
+var P = { pos: new THREE.Vector3(0, 0, 12), vel: new THREE.Vector3(), rot: Math.PI, heading: new THREE.Vector3(0, 0, -1), phase: 0, mv: 0, moving: false, mesh: null };
+var B = { pos: new THREE.Vector3(-1.5, 0, 13), vel: new THREE.Vector3(), rot: Math.PI, phase: 0, mv: 0, mesh: null };
+
+function rebuildPlayer(pf) { if (P.mesh) { scene.remove(P.mesh); disposeLabels(P.mesh); } P.mesh = buildPlayer(pf); scene.add(P.mesh); }
+function rebuildPet(pf) { if (B.mesh) { scene.remove(B.mesh); disposeLabels(B.mesh); } B.mesh = buildPet(pf.pet, pf.petName); scene.add(B.mesh); }
+
+/* ================= Thời gian & ánh sáng ================= */
+var cNight = new THREE.Color(0x262B3A), cDay = new THREE.Color(0xEDE4CE), cDusk = new THREE.Color(0xD9A679);
+var hSkyN = new THREE.Color(0x8D96B8), hSkyD = new THREE.Color(0xFFF4DC), hGndN = new THREE.Color(0x3E382F), hGndD = new THREE.Color(0xB9AA8E);
+var sunN = new THREE.Color(0xA9B4DA), sunD = new THREE.Color(0xFFE6BE), sunT = new THREE.Color(0xFFB070);
+var gN = new THREE.Color(0x2F3A55), gD = new THREE.Color(0xD7E4E6);
+var tmp = new THREE.Color(), sunOff = new THREE.Vector3(30, 30, 14), dayInfo = { h: 7, d: 1 };
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function applyTime(tMin) {
+  var h = (((tMin % 1440) + 1440) % 1440) / 60, a = (h - 6) / 12 * Math.PI, s = Math.sin(a);
+  var d = clamp(s * 1.8, 0, 1); d = d * d * (3 - 2 * d);
+  var tw = clamp(1 - Math.abs(s - 0.08) / 0.3, 0, 1);
+  dayInfo.h = h; dayInfo.d = d;
+  tmp.copy(cNight).lerp(cDay, d).lerp(cDusk, tw * 0.6);
+  scene.background.copy(tmp); scene.fog.color.copy(tmp);
+  hemi.color.copy(hSkyN).lerp(hSkyD, d); hemi.groundColor.copy(hGndN).lerp(hGndD, d);
+  hemi.intensity = 0.78 - 0.16 * d;
+  sun.color.copy(sunN).lerp(sunD, d).lerp(sunT, tw * 0.5);
+  sun.intensity = 0.22 + 0.48 * d;
+  sunOff.set(Math.cos(a) * 34, 10 + 26 * Math.max(s, 0), 14);
+  var glow = 1 - d;
+  WIN.emissiveIntensity = glow * 0.95; BULB.emissiveIntensity = glow * 1.1;
+  aptLight.intensity = glow * 0.9;
+  GLASS.color.copy(gN).lerp(gD, d).lerp(cDusk, tw * 0.45);
+}
+function fmtTime(tMin) {
+  var m = Math.floor(((tMin % 1440) + 1440) % 1440), hh = Math.floor(m / 60), mm = m % 60;
+  return (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+}
+function phaseText(h) {
+  if (h >= 5 && h < 7) return '🌅 Bình minh';
+  if (h >= 7 && h < 17) return '☀ Ban ngày';
+  if (h >= 17 && h < 19) return '🌇 Hoàng hôn';
+  return '☾ Ban đêm';
+}
+
+/* ================= Va chạm ================= */
+function resolve(p, r, obs, bd) {
+  for (var it = 0; it < 2; it++) {
+    for (var i = 0; i < obs.length; i++) {
+      var o = obs[i], dx = p.x - o.x, dz = p.z - o.z;
+      if (o.r !== undefined) {
+        var m = o.r + r, d = Math.hypot(dx, dz);
+        if (d < m) { if (d < 1e-4) { dx = 1; dz = 0; d = 1; } p.x = o.x + dx / d * m; p.z = o.z + dz / d * m; }
+      } else {
+        var ex = o.hx + r, ez = o.hz + r;
+        if (Math.abs(dx) < ex && Math.abs(dz) < ez) {
+          var px = ex - Math.abs(dx), pz = ez - Math.abs(dz);
+          if (px < pz) p.x = o.x + (dx >= 0 ? 1 : -1) * ex; else p.z = o.z + (dz >= 0 ? 1 : -1) * ez;
+        }
+      }
+    }
+  }
+  p.x = clamp(p.x, bd.x0 + r, bd.x1 - r); p.z = clamp(p.z, bd.z0 + r, bd.z1 - r);
+}
+function curObs() { return state.area === 'plaza' ? obsP : obsA; }
+function curBnd() { return state.area === 'plaza' ? BND_P : BND_A; }
+function lerpAngle(a, b, t) { var d = ((b - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; return a + d * t; }
+
+/* ================= Điều khiển ================= */
+var keys = {}, jx = 0, jy = 0;
+function typing(e) { var t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'); }
+window.addEventListener('keydown', function (e) {
+  if (typing(e)) return;
+  keys[e.code] = true;
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].indexOf(e.code) >= 0) e.preventDefault();
+  if ((e.code === 'KeyE' || e.code === 'KeyF') && !e.repeat) doAction();
+});
+window.addEventListener('keyup', function (e) { keys[e.code] = false; });
+window.addEventListener('blur', function () { keys = {}; jx = jy = 0; });
+
+(function joystick() {
+  var joy = $('#joy'), knob = $('#knob'), id = null;
+  function mv(e) {
+    var r = joy.getBoundingClientRect(), cx = r.left + r.width / 2, cyy = r.top + r.height / 2, R = r.width / 2 - 14;
+    var dx = e.clientX - cx, dy = e.clientY - cyy, len = Math.hypot(dx, dy);
+    if (len > R) { dx = dx / len * R; dy = dy / len * R; }
+    knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    var mx = dx / R, my = -dy / R, mag = Math.hypot(mx, my);
+    if (mag < 0.14) { jx = 0; jy = 0; } else { jx = mx; jy = my; }
+  }
+  function end(e) { if (id !== null && e.pointerId !== id) return; id = null; jx = 0; jy = 0; knob.style.transform = 'translate(0,0)'; }
+  joy.addEventListener('pointerdown', function (e) { id = e.pointerId; try { joy.setPointerCapture(id); } catch (x) {} mv(e); e.preventDefault(); });
+  joy.addEventListener('pointermove', function (e) { if (e.pointerId === id) mv(e); });
+  joy.addEventListener('pointerup', end); joy.addEventListener('pointercancel', end);
+})();
+
+/* ================= Vòng lặp cập nhật ================= */
+var FWD = new THREE.Vector3(-0.7071, 0, -0.7071), RGT = new THREE.Vector3(0.7071, 0, -0.7071);
+var SPEED = 5.6, nearPoi = null, lastMin = -1, aspect = 1;
+var camTarget = new THREE.Vector3(), zoomCur = 1, BASE = new THREE.Vector3(17, 20, 17), setupAng = 0.7;
+var tV = new THREE.Vector3(), tV2 = new THREE.Vector3();
+
+function updatePlayer(dt) {
+  var ix = 0, iy = 0;
+  if (!busy) {
+    if (keys.KeyA || keys.ArrowLeft) ix -= 1; if (keys.KeyD || keys.ArrowRight) ix += 1;
+    if (keys.KeyW || keys.ArrowUp) iy += 1; if (keys.KeyS || keys.ArrowDown) iy -= 1;
+    ix += jx; iy += jy;
+  }
+  var mag = Math.hypot(ix, iy); if (mag > 1) { ix /= mag; iy /= mag; mag = 1; }
+  tV.set(0, 0, 0).addScaledVector(FWD, iy).addScaledVector(RGT, ix).multiplyScalar(SPEED);
+  var k = 1 - Math.exp(-dt * 13);
+  P.vel.lerp(tV, k);
+  P.pos.x += P.vel.x * dt; P.pos.z += P.vel.z * dt;
+  resolve(P.pos, 0.5, curObs(), curBnd());
+  var sp = Math.hypot(P.vel.x, P.vel.z);
+  P.moving = sp > 0.4;
+  if (mag > 0.1 && sp > 0.3) {
+    P.rot = lerpAngle(P.rot, Math.atan2(P.vel.x, P.vel.z), 1 - Math.exp(-dt * 14));
+    tV2.set(P.vel.x, 0, P.vel.z).normalize();
+    P.heading.lerp(tV2, 1 - Math.exp(-dt * 5)).normalize();
+  }
+  P.mv += ((P.moving ? 1 : 0) - P.mv) * (1 - Math.exp(-dt * 10));
+  P.phase += dt * sp * 1.9;
+}
+
+function updatePet(dt) {
+  var dx = P.pos.x - B.pos.x, dz = P.pos.z - B.pos.z, dist = Math.hypot(dx, dz);
+  if (dist > 16) { B.pos.set(P.pos.x - P.heading.x * 2, 0, P.pos.z - P.heading.z * 2); B.vel.set(0, 0, 0); dx = P.pos.x - B.pos.x; dz = P.pos.z - B.pos.z; dist = Math.hypot(dx, dz); }
+  var gx = P.pos.x - P.heading.x * 1.8, gz = P.pos.z - P.heading.z * 1.8;
+  var ex = gx - B.pos.x, ez = gz - B.pos.z, dg = Math.hypot(ex, ez), sp = 0;
+  if (dist > 2.1 && dg > 0.2) sp = clamp(dg * 4, 0, 7.2);
+  if (dist < 1.1) { sp = 2; ex = -dx; ez = -dz; dg = Math.max(0.001, Math.hypot(ex, ez)); }
+  tV.set(dg > 0 ? ex / dg * sp : 0, 0, dg > 0 ? ez / dg * sp : 0);
+  B.vel.lerp(tV, 1 - Math.exp(-dt * 9));
+  B.pos.x += B.vel.x * dt; B.pos.z += B.vel.z * dt;
+  resolve(B.pos, 0.45, curObs(), curBnd());
+  var v = Math.hypot(B.vel.x, B.vel.z);
+  if (v > 0.5) B.rot = lerpAngle(B.rot, Math.atan2(B.vel.x, B.vel.z), 1 - Math.exp(-dt * 12));
+  else if (dist > 0.6) B.rot = lerpAngle(B.rot, Math.atan2(dx, dz), 1 - Math.exp(-dt * 3));
+  B.mv += (clamp(v / 4, 0, 1) - B.mv) * (1 - Math.exp(-dt * 10));
+  B.phase += dt * v * 2.6;
+}
+
+function animateChars(time) {
+  var m = P.mesh, u = m.userData, s = Math.sin(P.phase) * 0.85 * P.mv;
+  u.legs[0].rotation.x = s; u.legs[1].rotation.x = -s;
+  u.arms[0].rotation.x = -s * 0.8; u.arms[1].rotation.x = s * 0.8;
+  var bob = Math.abs(Math.sin(P.phase)) * 0.07 * P.mv;
+  u.body.position.y = bob; u.head.position.y = bob;
+  u.arms[0].position.y = u.arms[1].position.y = 1.55 + bob;
+  m.position.set(P.pos.x, 0, P.pos.z); m.rotation.y = P.rot;
+  var b = B.mesh, bu = b.userData, ps = Math.sin(B.phase) * 0.75 * B.mv;
+  bu.legs[0].rotation.x = ps; bu.legs[3].rotation.x = ps; bu.legs[1].rotation.x = -ps; bu.legs[2].rotation.x = -ps;
+  var bb = Math.abs(Math.sin(B.phase)) * 0.09 * B.mv + Math.sin(time * 2.2) * 0.012 * (1 - B.mv);
+  bu.bodyG.position.y = bb;
+  bu.tail.rotation.z = Math.sin(time * (bu.dog ? 9 : 2.4) * (0.6 + B.mv * 0.6)) * (bu.dog ? 0.5 : 0.25);
+  bu.head.rotation.x = Math.sin(time * 1.6) * 0.04 * (1 - B.mv);
+  b.position.set(B.pos.x, 0, B.pos.z); b.rotation.y = B.rot;
+}
+
+function updateCamera(dt, snap) {
+  var area = state.area, zt = area === 'plaza' ? 1 : 0.6;
+  var pf = aspect < 1 ? (area === 'plaza' ? 1.4 : 1.35) : 1;
+  if (state.mode === 'setup') {
+    setupAng += dt * 0.28;
+    var r = aspect < 1 ? 11 : 8.5, yy = aspect < 1 ? 5.6 : 4.2;
+    var tx = P.pos.x, tz = P.pos.z;
+    var shiftX = aspect < 1 ? 0 : -2.3, shiftY = aspect < 1 ? -2.0 : 0;
+    camera.position.set(tx + Math.sin(setupAng) * r, yy, tz + Math.cos(setupAng) * r);
+    camera.lookAt(tx, 1.1 + shiftY, tz);
+    if (shiftX) { tV.set(1, 0, 0).applyQuaternion(camera.quaternion); camera.position.addScaledVector(tV, shiftX); }
+    sun.position.copy(P.pos).add(sunOff); sun.target.position.copy(P.pos);
+    return;
+  }
+  if (area === 'plaza') tV.copy(P.pos);
+  else { tV.set(AX, 0, 0).lerp(P.pos, 0.62); }
+  if (snap) { camTarget.copy(tV); zoomCur = zt; }
+  else { camTarget.lerp(tV, 1 - Math.exp(-dt * 4.2)); zoomCur += (zt - zoomCur) * (1 - Math.exp(-dt * 2.4)); }
+  camera.position.copy(camTarget).addScaledVector(BASE, zoomCur * pf);
+  camera.lookAt(camTarget.x, camTarget.y + 0.8, camTarget.z);
+  sun.position.copy(camTarget).add(sunOff); sun.target.position.copy(camTarget);
+}
+
+function updateProximity() {
+  var list = state.area === 'plaza' ? POI_P : POI_A, best = null, bd = 1e9;
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i], d = Math.hypot(P.pos.x - p.x, P.pos.z - p.z);
+    if (d < p.r && d < bd) { best = p; bd = d; }
+  }
+  if (best !== nearPoi) {
+    nearPoi = best;
+    var n = $('#near'), a = $('#act');
+    if (!best) { n.hidden = true; a.hidden = true; }
+    else {
+      n.hidden = false;
+      n.innerHTML = best.action ? '📍 ' + best.name : '📍 ' + best.name + ' <small>· ' + best.note + '</small>';
+      if (best.action) { a.hidden = false; a.textContent = (isTouch ? '' : 'E · ') + best.verb; } else a.hidden = true;
+    }
+  }
+}
+
+/* ================= HUD & chuyển khu vực ================= */
+function updateHUDArea() {
+  $('#area').textContent = state.area === 'plaza' ? 'Quảng trường trung tâm' : 'Căn hộ thuê nhỏ';
+  $('#btnSwitch').textContent = state.area === 'plaza' ? '⇄ Vào Căn hộ' : '⇄ Ra Quảng trường';
+  nearPoi = undefined;
+}
+function updateHUDTime(force) {
+  var m = Math.floor(state.t);
+  if (m === lastMin && !force) return; lastMin = m;
+  $('#clk').textContent = fmtTime(state.t);
+  $('#dayTxt').textContent = 'Ngày ' + (Math.floor(state.t / 1440) + 1);
+  $('#phase').textContent = phaseText(dayInfo.h);
+}
+function setArea(a, sp) {
+  state.area = a; plaza.visible = a === 'plaza'; apt.visible = a === 'apt';
+  var s = sp || (a === 'plaza' ? { x: 17, z: -12.4, rot: 0 } : { x: AX + 4.5, z: 3.5, rot: Math.PI });
+  P.pos.set(s.x, 0, s.z); P.rot = s.rot; P.vel.set(0, 0, 0); P.heading.set(Math.sin(s.rot), 0, Math.cos(s.rot));
+  resolve(P.pos, 0.5, curObs(), curBnd());
+  B.pos.set(P.pos.x - 1.5, 0, P.pos.z + 0.3); B.vel.set(0, 0, 0); B.rot = s.rot;
+  resolve(B.pos, 0.45, curObs(), curBnd());
+  updateHUDArea(); updateCamera(0, true);
+}
+function goArea(target) {
+  if (busy || state.mode !== 'play' || target === state.area) return;
+  busy = true; var f = $('#fade'); f.classList.add('on');
+  setTimeout(function () { setArea(target); writeSave(); f.classList.remove('on'); setTimeout(function () { busy = false; }, 250); }, 320);
+}
+function doAction() {
+  if (state.mode !== 'play' || busy || !nearPoi || !nearPoi.action) return;
+  goArea(nearPoi.action === 'enter' ? 'apt' : 'plaza');
+}
+$('#act').addEventListener('click', doAction);
+$('#btnSwitch').addEventListener('click', function () { goArea(state.area === 'plaza' ? 'apt' : 'plaza'); });
+$('#btnReset').addEventListener('click', wipeAndReload);
+document.querySelectorAll('#tt button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    if (state.mode !== 'play') return;
+    state.t += parseInt(b.getAttribute('data-add'), 10);
+    var c = $('#clk'); c.classList.add('flash'); setTimeout(function () { c.classList.remove('flash'); }, 250);
+    applyTime(state.t); updateHUDTime(true); writeSave();
+  });
+});
+function wipeAndReload() {
+  if (!confirm('Xóa toàn bộ tiến trình đã lưu và bắt đầu lại từ đầu?')) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  state.profile = null; location.reload();
+}
+
+/* ================= Lưu trữ ================= */
+function loadSave() {
+  try {
+    var s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (s && s.profile && s.profile.name && typeof s.t === 'number' && isFinite(s.t)) return s;
+  } catch (e) {}
+  return null;
+}
+function writeSave() {
+  if (!state.profile || state.mode !== 'play') return;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, profile: state.profile, t: state.t, area: state.area, x: P.pos.x, z: P.pos.z, rot: P.rot })); } catch (e) {}
+}
+setInterval(writeSave, 4000);
+document.addEventListener('visibilitychange', function () { if (document.hidden) writeSave(); });
+window.addEventListener('pagehide', writeSave);
+
+/* ================= Màn hình khởi tạo ================= */
+var draft = { name: '', gender: 'm', skin: SKINS[0], hair: HAIRS[1], shirt: SHIRTS[0], pet: 'dog', petName: '' };
+function refreshPreview() {
+  rebuildPlayer({ name: draft.name || 'Con Sen', gender: draft.gender, skin: draft.skin, hair: draft.hair, shirt: draft.shirt });
+  rebuildPet({ pet: draft.pet, petName: draft.petName || 'Boss' });
+  P.mesh.position.set(P.pos.x, 0, P.pos.z); B.mesh.position.set(B.pos.x, 0, B.pos.z);
+}
+function swatches(id, arr, key) {
+  var box = $(id);
+  arr.forEach(function (c) {
+    var b = document.createElement('button'); b.style.background = c; b.setAttribute('aria-label', c);
+    if (draft[key] === c) b.className = 'on';
+    b.addEventListener('click', function () { draft[key] = c; box.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); refreshPreview(); });
+    box.appendChild(b);
+  });
+}
+function segs(id, key) {
+  var box = $(id);
+  box.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () { draft[key] = b.getAttribute('data-v'); box.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); refreshPreview(); });
+  });
+}
+swatches('#swSkin', SKINS, 'skin'); swatches('#swHair', HAIRS, 'hair'); swatches('#swShirt', SHIRTS, 'shirt');
+segs('#sgGender', 'gender'); segs('#sgPet', 'pet');
+$('#inName').addEventListener('input', function (e) { draft.name = e.target.value.trim(); refreshPreview(); });
+$('#inPet').addEventListener('input', function (e) { draft.petName = e.target.value.trim(); refreshPreview(); });
+$('#btnWipe').addEventListener('click', wipeAndReload);
+$('#btnStart').addEventListener('click', function () {
+  var nm = $('#inName').value.trim();
+  if (!nm) { var c = document.querySelector('.card'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); $('#inName').focus(); return; }
+  var pf = { name: nm, gender: draft.gender, skin: draft.skin, hair: draft.hair, shirt: draft.shirt, pet: draft.pet, petName: draft.petName || 'Boss' };
+  startGame(pf, null);
+});
+
+function startGame(pf, saved) {
+  state.profile = pf; state.mode = 'play';
+  state.t = saved ? saved.t : 7 * 60;
+  buildApt(pf);
+  rebuildPlayer(pf); rebuildPet(pf);
+  $('#setup').classList.remove('on'); $('#hud').classList.add('on');
+  $('#who').textContent = 'Hồ sơ: ' + pf.name + ' · Boss: ' + pf.petName;
+  var area = saved && (saved.area === 'apt' || saved.area === 'plaza') ? saved.area : 'plaza', sp = null;
+  if (saved && isFinite(saved.x) && isFinite(saved.z)) sp = { x: saved.x, z: saved.z, rot: isFinite(saved.rot) ? saved.rot : Math.PI };
+  else if (area === 'plaza') sp = { x: 0, z: 12, rot: Math.PI };
+  if (sp && ((area === 'apt') !== (sp.x > AX - 50))) sp = null;
+  setArea(area, sp);
+  applyTime(state.t); updateHUDTime(true); writeSave();
+}
+
+/* ================= Khởi động ================= */
+function resize() {
+  var w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false); aspect = w / h; camera.aspect = aspect; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize); window.addEventListener('orientationchange', function () { setTimeout(resize, 150); });
+resize();
+
+var last = performance.now(), t0 = last;
+function frame(now) {
+  requestAnimationFrame(frame);
+  var dt = Math.min(0.05, (now - last) / 1000); last = now;
+  var time = (now - t0) / 1000;
+  if (state.mode === 'play') {
+    if (!busy) state.t += dt * GAME_RATE / 60;
+    applyTime(state.t); updateHUDTime(false);
+    updatePlayer(dt); updatePet(dt); updateProximity();
+  } else {
+    applyTime(state.t);
+  }
+  if (P.mesh && B.mesh) animateChars(time);
+  for (var i = 0; i < bobbers.length; i++) bobbers[i].o.position.y = bobbers[i].y + Math.sin(time * 2.4 + i) * 0.22;
+  for (var j = 0; j < pulsers.length; j++) { var sc2 = 1 + Math.sin(time * 3 + j) * 0.08; pulsers[j].o.scale.set(sc2, 1, sc2); }
+  updateCamera(dt, false);
+  renderer.render(scene, camera);
+}
+
+(function init() {
+  var saved = loadSave();
+  if (saved) { startGame(saved.profile, saved); }
+  else {
+    state.mode = 'setup'; state.t = 10.5 * 60; state.area = 'plaza';
+    plaza.visible = true; apt.visible = false;
+    P.pos.set(0, 0, 8); P.rot = 0; B.pos.set(1.7, 0, 8.4); B.rot = -0.4;
+    refreshPreview(); applyTime(state.t);
+    $('#setup').classList.add('on');
+  }
+  requestAnimationFrame(frame);
+})();
+})();
+/* MEETOPIA_SCRIPT_END */
+</script>
+</body>
+</html>

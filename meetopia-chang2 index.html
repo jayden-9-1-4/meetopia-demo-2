@@ -1,0 +1,50 @@
+import shutil, sys
+src = '/home/claude/meetopia-chang1.html'
+dst = '/home/claude/meetopia-chang2.html'
+shutil.copy(src, dst)
+s = open(dst, encoding='utf-8').read()
+
+def rep(old, new):
+    global s
+    assert s.count(old) == 1, ('anchor count', s.count(old), old[:60])
+    s = s.replace(old, new)
+
+css = r'''#coinRow{font-size:12px;margin-top:3px;font-weight:600}
+#bossRow{font-size:11px;margin-top:2px}
+#bossRow b{padding:1px 6px;border-radius:6px;background:rgba(95,111,82,.18)}
+#bossRow b.bad{background:rgba(165,101,74,.25)}
+#bossRow b.dead{background:rgba(92,64,40,.35)}
+#qRow{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(92,64,40,.28);font-size:12px;font-weight:600;color:var(--olive);display:flex;align-items:center;gap:6px}
+#qRow[hidden]{display:none}
+#qArrow{display:inline-block;font-size:15px;color:var(--wood);transition:transform .1s}
+#toast{position:fixed;left:50%;top:60px;transform:translate(-50%,-8px);z-index:18;background:rgba(92,64,40,.94);color:var(--cream);padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:92vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#modal{position:fixed;inset:0;z-index:15;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(40,28,18,.45)}
+#modal.on{display:flex}
+.mcard{width:430px;max-width:100%;max-height:92vh;overflow:auto;padding:16px 18px;touch-action:pan-y;-webkit-user-select:auto;user-select:auto}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.mh h2{margin:0;font-size:18px;color:var(--olive)}
+.mh .x{background:none;border:0;font-size:20px;color:var(--wood-d);cursor:pointer;padding:4px 8px}
+.wallet{font-size:14px;margin:4px 0 2px}
+.item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed rgba(92,64,40,.22)}
+.item small{display:block;font-size:12px;opacity:.7;margin-top:2px;line-height:1.3}
+.item i{font-style:normal;font-size:11px;opacity:.7;margin-left:4px}
+.item .btn{padding:7px 11px;font-size:13px;white-space:nowrap}
+.item .btn:disabled{opacity:.4;cursor:not-allowed}
+.note{font-size:12px;opacity:.75;line-height:1.4;margin:8px 0 0}
+'''
+rep('#fade{position:fixed;inset:0;', css + '#fade{position:fixed;inset:0;')
+
+rep('<div id="who"></div>', '''<div id="who"></div>
+    <div id="coinRow">💰 <b id="coins">0</b> Sen Coin</div>
+    <div id="bossRow">Boss: <b id="bAte">No</b> <b id="bMood">Bình thường</b></div>
+    <div id="qRow" hidden><span id="qTxt"></span><span id="qArrow">▲</span></div>''')
+
+rep('<div id="fade"></div>', '<div id="modal"><div class="mcard panel" id="modalCard"></div></div>\n<div id="toast"></div>\n<div id="fade"></div>')
+
+rep("var state = { mode: 'setup', area: 'plaza', t: 7 * 60, profile: null };",
+    "var state = { mode: 'setup', area: 'plaza', t: 7 * 60, profile: null, modal: false, coins: 30, boss: { lastFed: 0, lastItem: 0, happyUntil: 0, items: { bed: 0, toy: 0, house: 0, seat: 0 } } };")
+
+rep("{ id: 'job', name: 'Trung tâm môi giới việc làm', note: 'mở ở Chặng sau', x: -19, z: -14, r: 3.4 },",
+    "{ id: 'job', name: 'Chị Hằng · Trung tâm việc làm', action: 'job', verb: 'Nhận việc', x: -16.5, z: -13.2, r: 2.9 },")
+rep("{ id: 'shop', name: 'Cửa hàng', note: 'mở ở Chặng sau', x: -10, z: -14, r: 3.0 },",
